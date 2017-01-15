@@ -1,12 +1,11 @@
 #include <ESP8266WiFi.h>
-#include <SoftwareSerial.h>
 
 // WiFi Connection Parameters
 const char* ssid = "wifi";
 const char* password = "password";
 
-// Declare second serial connection on pins 4 and 5
-SoftwareSerial SerialComm(4,5);
+// Initialize relay pin
+int pin = 4;
 
 // Set default state
 // In power failure, switches/IR blasters would be turned off
@@ -16,14 +15,15 @@ String state = "OFF";
 WiFiServer server(80);
 
 // Forward declaration of methods
-void curtainControl(String command);
+void triggerRelay();
 String genResponse(String val);
 
-void setup(void)
-{
+void setup() {
+  // Set relay pin mode
+  pinMode(pin, OUTPUT);
+
   // Start Serial
   Serial.begin(115200);
-  SerialComm.begin(9600);
 
   // Connect to WiFi network
   Serial.println();
@@ -85,12 +85,12 @@ void loop() {
     if (req.indexOf("ON") >=0 && state != "ON") {
       state = "ON";
       respVal = state;
-      curtainControl("O");
+      triggerRelay();
     }
     else if (req.indexOf("OFF") >=0 && state != "OFF") {
       state = "OFF";
       respVal = state;
-      curtainControl("C");
+      triggerRelay();
     }
   }
 
@@ -99,10 +99,11 @@ void loop() {
   delay(1);
 }
 
-// Send the received command to the base Arduino over serial
-void curtainControl(String command) {
-  Serial.println(command);
-  SerialComm.println(command);
+// Energize relay for 1 second
+void triggerRelay() {
+  digitalWrite(pin, HIGH);
+  delay(1000);
+  digitalWrite(pin, LOW);
 }
 
 // Generate HTTP response

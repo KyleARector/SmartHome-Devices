@@ -1,11 +1,10 @@
-// Uses SoftwareSerial with my revisions on GitHub
 #include <SoftwareSerial.h>
 #include <Wire.h>
 #include <Adafruit_MotorShield.h>
 #include "utility/Adafruit_MS_PWMServoDriver.h"
 
 // Initialize motor shield
-Adafruit_MotorShield AFMS = Adafruit_MotorShield();
+Adafruit_MotorShield AFMS = Adafruit_MotorShield(); 
 // Use M4 on motor shield
 Adafruit_DCMotor *curtainMotor = AFMS.getMotor(4);
 
@@ -22,7 +21,7 @@ void setup() {
   // Start the motor shield
   AFMS.begin();
   // Set motor default speed to highest possible
-  curtainMotor->setSpeed(255);
+  curtainMotor->setSpeed(255); 
 }
 
 void loop() {
@@ -42,7 +41,8 @@ void runMotor(char dir) {
   }
   else if (dir == 'C'){
     curtainMotor->run(BACKWARD);
-    delay(4250);
+    delay(3500);
   }
   curtainMotor->run(RELEASE);
 }
+

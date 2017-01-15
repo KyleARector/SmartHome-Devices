@@ -1,12 +1,12 @@
 #include <ESP8266WiFi.h>
-#include <SoftwareSerial.h>
 
 // WiFi Connection Parameters
 const char* ssid = "wifi";
 const char* password = "password";
 
-// Declare second serial connection on pins 4 and 5
-SoftwareSerial SerialComm(4,5);
+// Initialize relay pins
+int upPin = 4;
+int downPin = 5;
 
 // Set default state
 // In power failure, switches/IR blasters would be turned off
@@ -16,14 +16,27 @@ String state = "OFF";
 WiFiServer server(80);
 
 // Forward declaration of methods
-void curtainControl(String command);
+void triggerRelay();
 String genResponse(String val);
 
-void setup(void)
-{
+void setup() {
+  // Set relay pin mode
+  digitalWrite(upPin, HIGH);
+  digitalWrite(downPin, HIGH);
+  pinMode(upPin, OUTPUT);
+  pinMode(downPin, OUTPUT);
+
+  // Run relay up once to make sure expected state is in place?
+  digitalWrite(upPin, LOW);
+  delay(750);
+  digitalWrite(upPin, HIGH);
+  delay(750);
+  digitalWrite(upPin, LOW);
+  delay(750);
+  digitalWrite(upPin, HIGH);
+
   // Start Serial
   Serial.begin(115200);
-  SerialComm.begin(9600);
 
   // Connect to WiFi network
   Serial.println();
@@ -85,12 +98,12 @@ void loop() {
     if (req.indexOf("ON") >=0 && state != "ON") {
       state = "ON";
       respVal = state;
-      curtainControl("O");
+      runScreenRelay("D");
     }
     else if (req.indexOf("OFF") >=0 && state != "OFF") {
       state = "OFF";
       respVal = state;
-      curtainControl("C");
+      runScreenRelay("U");
     }
   }
 
@@ -99,10 +112,22 @@ void loop() {
   delay(1);
 }
 
-// Send the received command to the base Arduino over serial
-void curtainControl(String command) {
-  Serial.println(command);
-  SerialComm.println(command);
+// Check what command was sent, then hit the relay twice
+void runScreenRelay(String command) {
+  int pin = 0;
+  if (command == "U") {
+    pin = upPin;
+  }
+  else if (command == "D") {
+    pin = downPin;
+  }
+  digitalWrite(pin, LOW);
+  delay(750);
+  digitalWrite(pin, HIGH);
+  delay(750);
+  digitalWrite(pin, LOW);
+  delay(750);
+  digitalWrite(pin, HIGH);
 }
 
 // Generate HTTP response
