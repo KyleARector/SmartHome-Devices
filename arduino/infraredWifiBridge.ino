@@ -1,105 +1,71 @@
 #include <ESP8266WiFi.h>
+#include <PubSubClient.h>
 
 // WiFi Connection Parameters
-const char* ssid = "wifi";
-const char* password = "password";
+const char* wifi_ssid = "ssid";
+const char* wifi_password = "password";
 
+// MQTT Connection Parameters
+const char* mqtt_server = "1.2.3.4";
+const char* mqtt_user = "user" ;
+const char* mqtt_password = "password";
+const int mqtt_port = 1883;
+
+// Sensor Name
+const char* sensor_name = "TV";
+
+// Set Up Topics
+const char* node_state = "tv";
+const char* node_state_set = "tv/set";
+
+// Set default state
+String state = "OFF";
+
+// Setup time keeping
+unsigned long previous_time = 0;
+const int rpt_interval_ms = 30000;
+ 
 // Declare the pin for IR LED
 int pin =  4;
 
-// Set default state
-// In power failure, switches/IR blasters would be turned off
-String state = "OFF";
+// Initialize clients
+WiFiClient base_client;
+PubSubClient client(base_client);
 
-// Create an instance of the server
-WiFiServer server(80);
-
-// Forward declaration of methods
-void pulseIR(long microsecs);
-void tvOnOff();
-String genResponse(String val);
-
-void setup()
+void pubState()
 {
-  // Set the LED pin mode
-  pinMode(pin, OUTPUT);
-
-  // Start Serial
-  Serial.begin(115200);
-
-  // Connect to WiFi network
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
-
-  // Start WiFi connection
-  WiFi.begin(ssid, password);
-
-  // Wait for connection
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println();
-  Serial.println("WiFi connected");
-
-  // Start the server
-  server.begin();
-  Serial.println("Server started");
-
-  // Print the IP address
-  Serial.println(WiFi.localIP());
-  // Do not broadcast AP
-  WiFi.mode(WIFI_STA);
+  client.publish(node_state, state.c_str(), true);
 }
 
-void loop()
-{
-  // Check for client
-  WiFiClient client = server.available();
-  if (!client) {
-    return;
+// Receive the command on the subscribed topic
+void recv_command(char* topic, byte* payload, unsigned int length) {
+  char command[length + 1];
+  for (int i = 0; i < length; i++) {
+    command[i] = (char)payload[i];
   }
-
-  // Wait for client data
-  while(!client.available()){
-    delay(1);
+  command[length] = '\0';
+  // Only update the state and issue command if different state requested
+  String command_str = command;
+  if (command_str != state)
+  {
+    state = command_str;
+    tvOnOff();
   }
+  pubState();
+}
 
-  // Read the request and verb
-  String req = client.readString();
-  String verb = req.substring(0, req.indexOf(' '));
-  client.flush();
-
-  // Exit process if not valid endpt
-  if (req.indexOf("/state") == -1) {
-    client.stop();
-    return;
-  }
-  client.flush();
-
-  String respVal = "";
-  // Handle GET request
-  if (verb == "GET") {
-    respVal = state;
-  }
-  // Handle POST request
-  else if (verb == "POST") {
-    if (req.indexOf("ON") >=0 && state != "ON") {
-      state = "ON";
-      respVal = state;
-      tvOnOff();
+// Connect to the MQTT server and subscribe to required topics
+void MQTT_connect() {
+  while (!client.connected()) {
+    if (client.connect(sensor_name, mqtt_user, mqtt_password)) {
+      Serial.println("MQTT connected");
+      client.subscribe(node_state_set);
     }
-    else if (req.indexOf("OFF") >=0 && state != "OFF") {
-      state = "OFF";
-      respVal = state;
-      tvOnOff();
+    else {
+      delay(5000);
     }
   }
-
-  // Send the response
-  client.print(genResponse(respVal));
-  delay(1);
+  pubState();
 }
 
 // Pulse the IR emitter
@@ -203,32 +169,50 @@ void tvOnOff() {
   pulseIR(560);
 }
 
-// Generate HTTP response
-// Parameter is on/off value to be inserted into response
-String genResponse(String val) {
-  String resp = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n";
-  resp += "{\"state\": \"";
-  resp += val;
-  resp += "\"}";
-  resp += "\n";
-  return resp;
+void setup()
+{
+  // Set the LED pin mode
+  pinMode(pin, OUTPUT);
+
+  // Start USB serial connection for debug
+  Serial.begin(115200);
+
+  // Connect to WiFi network
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(wifi_ssid);
+
+  // Start WiFi
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(wifi_ssid, wifi_password);
+
+  // Wait for connection
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  // Set up MQTT connection
+  client.setServer(mqtt_server, mqtt_port);
+  client.setCallback(recv_command);
+  MQTT_connect();
 }
 
-// Work in progress to dynamically send pulses from array
-// Array automatically generated from remote capture sketch
-/*void sendSignal(int signalArray[])
+void loop()
 {
-  for(int x = 0; x < sizeof(signalArray); x++)
-  {
-    if((x % 2) == 0)
-    {
-      pulseIR(signalArray[x] * 10);
-      Serial.println(signalArray[x] * 10);
-    }
-    else
-    {
-      delayMicroseconds(signalArray[x] * 10);
-      Serial.println(signalArray[x] * 10);
-    }
+  // Reconnect if server lost
+  if (!client.connected()) {
+    //ESP.reset();
+    MQTT_connect();
   }
-}*/
+
+  // Run the MQTT client loop
+  client.loop();
+
+  unsigned long current_time = millis();
+  if ((unsigned long)(current_time - previous_time) >= rpt_interval_ms)
+  {
+    pubState();
+    previous_time = current_time;
+  }
+}

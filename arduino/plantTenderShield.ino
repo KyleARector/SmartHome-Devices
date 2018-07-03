@@ -16,11 +16,11 @@ const char* mqtt_password = "password";
 const int mqtt_port = 1883;
 
 // Sensor Name
-const char* sensor_name = "Pet Feeder 1";
+const char* sensor_name = "Plant Monitor 1";
 
 // Set Up Topics
-const char* node_state = "pet_feeder1";
-const char* node_state_set = "pet_feeder1/set";
+const char* node_state = "plant_monitor1";
+const char* node_state_set = "plant_monitor1/set";
 
 // Set default state
 String state = "OFF";
@@ -121,3 +121,4 @@ void loop()
     previous_time = current_time;
   }
 }
+

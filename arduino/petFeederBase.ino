@@ -9,38 +9,41 @@ Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 Adafruit_DCMotor *motor = AFMS.getMotor(4);
 
 // Declare software serial connection on pins 2 and 3
-SoftwareSerial SerialComm(3,2);
+SoftwareSerial SerialComm(4,5);
 
 // Declare dispense function
-void dispense(int cups);
+void dispense();
 
 void setup()
 {
   // Start serial connection
   Serial.begin(9600);
   SerialComm.begin(9600);
+
+  Serial.println("Starting...");
   // Start the motor shield
   AFMS.begin();
   // Set motor default speed to highest possible
   motor->setSpeed(255); 
 }
 
-void loop()
-{
+void loop() {
   // If serial is available from Node
   if (SerialComm.available() > 0){
-    // Read the character and cast as int
-    int cups = atoi(SerialComm.read());
+    // Read the command
+    String command = SerialComm.readString();
     // Dispense food
-    dispense(cups);
+    dispense();
   }
 }
 
-void dispense(int cups)
+void dispense()
 {
-  int dispenseInterval = 5000 * cups;
+  SerialComm.println("ON");
+  int dispenseInterval = 10000;
   motor->run(FORWARD);
   delay(dispenseInterval);
   motor->run(RELEASE);
+  SerialComm.println("OFF");
 }
 
