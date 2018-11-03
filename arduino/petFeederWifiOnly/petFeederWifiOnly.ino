@@ -1,5 +1,6 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
+#include <ArduinoOTA.h>
 #include "config.h"
 
 // Set default state
@@ -57,7 +58,7 @@ void recv_command(char* topic, byte* payload, unsigned int length)
   {
     state = command;
     // Send the new command to the Arduino Uno
-    runMotor(10);
+    runMotor(20);
     pubState();
   } 
 }
@@ -99,11 +100,13 @@ void setup()
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWD);
 
-  // Waiot for connection
+  // Wait for connection
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
+
+  ArduinoOTA.begin();
 
   // Set up MQTT connection
   client.setServer(MQTT_SERV, MQTT_PORT);
@@ -135,4 +138,6 @@ void loop()
     pubState(); 
     previous_state_time = current_time;
   }
+
+  ArduinoOTA.handle();
 }
