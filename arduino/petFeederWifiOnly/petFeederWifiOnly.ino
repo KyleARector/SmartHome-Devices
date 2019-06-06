@@ -58,8 +58,9 @@ void recv_command(char* topic, byte* payload, unsigned int length)
   {
     state = command;
     // Send the new command to the Arduino Uno
-    runMotor(20);
+    runMotor(18);
     pubState();
+    previous_state_time = millis();
   } 
 }
 
@@ -135,8 +136,7 @@ void loop()
       && state != "OFF")
   {
     state = "OFF";
-    pubState(); 
-    previous_state_time = current_time;
+    pubState();
   }
 
   ArduinoOTA.handle();
