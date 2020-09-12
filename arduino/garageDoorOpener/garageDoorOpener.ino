@@ -8,10 +8,10 @@ String state = "OFF";
 
 // Setup time keeping
 unsigned long previous_time = 0;
-const int rpt_interval_ms = 5000;
+const int rpt_interval_ms = 1000;
 
-const int sensePin = 5;
-const int relayPin = 0;
+const int sensePin = 4;
+const int relayPin = 5;
 
 // Initialize clients
 WiFiClient base_client;
@@ -72,7 +72,8 @@ void setup()
   Serial.begin(115200);
 
   // Set up pins for relay and sensor
-  pinMode(sensePin, INPUT_PULLUP);
+  pinMode(sensePin, INPUT);
+  digitalWrite(relayPin, LOW);
   pinMode(relayPin, OUTPUT);
 
   // Connect to WiFi network
