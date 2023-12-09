@@ -5,13 +5,14 @@
 
 // Set default state
 String state = "0";
+int debounce = 0;
 
-const int button1Pin = 5;
+const int button1Pin = 14;
 const int button2Pin = 4;
-const int button3Pin = 14;
-const int button4Pin = 12;
+const int button3Pin = 5;
+const int button4Pin = 15;
 const int button5Pin = 13;
-const int button6Pin = 15;
+const int button6Pin = 12;
 
 // Initialize clients
 WiFiClient base_client;
@@ -19,8 +20,12 @@ PubSubClient client(base_client);
 
 void ICACHE_RAM_ATTR buttonPressed(String button)
 {
-  state = button;
-  pubState();
+  if (debounce == 0)
+  {
+    debounce = 10;
+    state = button;
+    pubState();
+  }
 }
 
 void ICACHE_RAM_ATTR button1Interrupt()
@@ -125,4 +130,10 @@ void loop()
   client.loop();
 
   ArduinoOTA.handle();
+
+  if (debounce > 0)
+  {
+    delay(100);
+    debounce--;
+  }
 }

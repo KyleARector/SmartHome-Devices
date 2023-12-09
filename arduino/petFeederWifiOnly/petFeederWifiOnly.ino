@@ -58,7 +58,7 @@ void recv_command(char* topic, byte* payload, unsigned int length)
   {
     state = command;
     // Send the new command to the Arduino Uno
-    runMotor(18);
+    runMotor(6);
     pubState();
     previous_state_time = millis();
   } 

@@ -20,7 +20,7 @@ PubSubClient client(base_client);
 void switchRelay() 
 {
   digitalWrite(relayPin, HIGH);
-  delay(500);
+  delay(250);
   digitalWrite(relayPin, LOW);
 }
 
